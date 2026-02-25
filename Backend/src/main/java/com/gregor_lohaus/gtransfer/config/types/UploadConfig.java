@@ -9,4 +9,8 @@ public class UploadConfig implements TomlSerializable {
   public Integer maxDownloadLimit;
   @Property(name = "maxExpiryDays")
   public Integer maxExpiryDays;
+  @Property(name = "cleanupEnabled")
+  public Boolean cleanupEnabled;
+  @Property(name = "cleanupIntervalMs")
+  public Long cleanupIntervalMs;
 }
