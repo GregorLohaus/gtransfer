@@ -47,6 +47,8 @@ public class DefaultConfig {
     UploadConfig uc = new UploadConfig();
     uc.maxDownloadLimit = 100;
     uc.maxExpiryDays = 30;
+    uc.cleanupEnabled = true;
+    uc.cleanupIntervalMs = 3600000L;
     c.uploadConfig = uc;
 
     config = c;
