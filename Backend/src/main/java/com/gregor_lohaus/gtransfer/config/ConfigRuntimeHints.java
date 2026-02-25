@@ -55,6 +55,16 @@ public class ConfigRuntimeHints implements RuntimeHintsRegistrar {
         MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
         MemberCategory.ACCESS_DECLARED_FIELDS,
         MemberCategory.ACCESS_PUBLIC_FIELDS);
+    hints.reflection().registerType(ServerConfig.class,
+        MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+        MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+        MemberCategory.ACCESS_DECLARED_FIELDS,
+        MemberCategory.ACCESS_PUBLIC_FIELDS);
+    hints.reflection().registerType(SslConfig.class,
+        MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+        MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+        MemberCategory.ACCESS_DECLARED_FIELDS,
+        MemberCategory.ACCESS_PUBLIC_FIELDS);
     hints.reflection().registerType(TypeAdapter.class,
         MemberCategory.ACCESS_DECLARED_FIELDS,
         MemberCategory.ACCESS_PUBLIC_FIELDS);
