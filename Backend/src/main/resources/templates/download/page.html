@@ -3,10 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title th:text="${filename != null ? filename + ' — GTransfer' : 'GTransfer'}">GTransfer</title>
+    <title>GTransfer</title>
     <link rel="stylesheet" th:href="@{/webjars/bootstrap/dist/css/bootstrap.min.css}">
     <link rel="stylesheet" th:href="@{/style.css}">
-    <script th:src="@{/download.js}" defer></script>
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}" defer></script>
+    <script th:src="@{/crypto.js}" defer></script>
+    <script th:src="@{/download.js}" type="module"></script>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
@@ -18,8 +20,7 @@
     <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5 px-3">
         <div id="download-state" class="drop-zone text-center py-5 px-4" style="max-width: 520px; width: 100%;">
             <div class="drop-zone-icon mb-3">&#x1F512;</div>
-            <div class="fw-medium mb-2" th:if="${filename != null}" th:text="${filename}"></div>
-            <div class="drop-zone-text" id="download-status">Preparing&hellip;</div>
+<div class="drop-zone-text" id="download-status">Preparing&hellip;</div>
         </div>
     </main>
 

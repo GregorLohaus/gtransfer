@@ -45,8 +45,7 @@ public class UploadController {
             @RequestParam("hash") String hash,
             @RequestParam("name") String name,
             @RequestParam(required = false) Integer expiryDays,
-            @RequestParam(required = false) Integer downloadLimit,
-            Model model) throws IOException {
+            @RequestParam(required = false) Integer downloadLimit) throws IOException {
 
         storageService.put(hash, file.getBytes());
 
@@ -57,7 +56,6 @@ public class UploadController {
         f.setDownloadLimit(limit);
         fileRepository.save(f);
 
-        model.addAttribute("id", hash);
         return "upload/result :: view";
     }
 }

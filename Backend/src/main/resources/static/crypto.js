@@ -16,13 +16,32 @@ async function encryptFile(arrayBuffer) {
 
     // SHA-256(rawKey) → file identifier sent to server; server never sees the key itself
     const rawKey = await crypto.subtle.exportKey('raw', key);
-    const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', rawKey)))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
+    const hash = await hashKey(rawKey);
 
-    // Base64url-encode key for URL fragment
-    const base64urlKey = btoa(String.fromCharCode(...new Uint8Array(rawKey)))
-        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const base64urlKey = encodeKey(rawKey);
 
     return { payload, hash, base64urlKey };
+}
+
+async function hashKey(rawKey) {
+    return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', rawKey)))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+async function decryptFile(payload, key) {
+    const bytes = new Uint8Array(payload);
+    const iv = bytes.slice(0, 12);
+    const ciphertext = bytes.slice(12);
+    return crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+}
+
+function encodeKey(rawKey) {
+    return btoa(String.fromCharCode(...new Uint8Array(rawKey)))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+function decodeKey(base64url) {
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+    return Uint8Array.from(atob(base64), c => c.charCodeAt(0));
 }
