@@ -1,4 +1,4 @@
-package com.gregor_lohaus.gtransfer.services;
+package com.gregor_lohaus.gtransfer.services.filecleanup;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -15,10 +15,11 @@ import com.gregor_lohaus.gtransfer.model.File;
 import com.gregor_lohaus.gtransfer.model.FileRepository;
 import com.gregor_lohaus.gtransfer.services.filewriter.AbstractStorageService;
 
-@Component
-@ConditionalOnProperty(name = "gtransfer-config.upload.cleanupEnabled", havingValue = "true", matchIfMissing = true)
 public class FileCleanupService {
-
+    private Boolean enabled;
+    public FileCleanupService(Boolean enabled) {
+        this.enabled = enabled;
+    }
     private static final Logger log = LoggerFactory.getLogger(FileCleanupService.class);
 
     @Autowired
@@ -27,17 +28,24 @@ public class FileCleanupService {
     @Autowired
     private AbstractStorageService storageService;
 
-    @Scheduled(fixedDelayString = "${gtransfer-config.upload.cleanupIntervalMs:3600000}")
+    @Scheduled(fixedDelay = 30000)
     @Transactional
     public void cleanupExpiredFiles() {
+        log.info("Cleaneup started");
+        if (!enabled) {
+            log.info("Cleaneup skipped");
+            return;            
+        }
         List<File> expired = fileRepository.findExpired(LocalDateTime.now());
-        if (expired.isEmpty()) return;
+        if (expired.isEmpty()) {
+            log.info("Nothing to clean up");
+            return;
+        };
 
         for (File file : expired) {
             storageService.delete(file.getId());
             fileRepository.delete(file);
         }
-
         log.info("Cleaned up {} expired file(s)", expired.size());
     }
 }
