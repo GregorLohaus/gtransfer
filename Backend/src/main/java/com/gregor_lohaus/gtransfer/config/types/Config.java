@@ -11,4 +11,6 @@ public class Config implements TomlSerializable {
   public SpringConfig springConfig;
   @Nested(name = "storageService")
   public StorageService storageService;
+  @Nested(name = "upload")
+  public UploadConfig uploadConfig;
 }
