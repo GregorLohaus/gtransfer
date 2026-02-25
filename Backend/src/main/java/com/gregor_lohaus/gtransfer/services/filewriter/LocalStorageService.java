@@ -33,4 +33,13 @@ public class LocalStorageService extends AbstractStorageService {
       return Optional.empty();
     }
   }
+
+  @Override
+  public boolean delete(String id) {
+    try {
+      return Files.deleteIfExists(root.resolve(id));
+    } catch (IOException e) {
+      return false;
+    }
+  }
 }

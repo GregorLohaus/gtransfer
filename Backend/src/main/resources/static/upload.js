@@ -65,10 +65,11 @@ async function startUpload() {
         const response = await fetch('/upload', { method: 'POST', body: formData });
         if (!response.ok) throw new Error(`Server error ${response.status}`);
 
-        // Server returns HTML fragment; append key fragment client-side
+        // Server returns HTML fragment; prepend origin and append key fragment client-side
         dropZone.innerHTML = await response.text();
         htmx.process(dropZone);
-        document.getElementById('share-link').value += '#' + base64urlKey;
+        const shareLink = document.getElementById('share-link');
+        shareLink.value = window.location.origin + shareLink.value + '#' + base64urlKey;
 
     } catch (err) {
         dropZone.innerHTML = `
