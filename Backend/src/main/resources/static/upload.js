@@ -1,54 +1,50 @@
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
+const dropZone = htmx.find('#drop-zone');
+const fileInput = htmx.find('#file-input');
 const promptHtml = dropZone.innerHTML;
 
 let selectedFile = null;
 
-// ── File selection ────────────────────────────────────────────────────────────
-
-dropZone.addEventListener('click', () => {
+htmx.on(dropZone, 'click', () => {
     if (selectedFile === null) fileInput.click();
 });
 
-fileInput.addEventListener('change', e => {
+htmx.on(fileInput, 'change', e => {
     if (e.target.files[0]) onFileSelected(e.target.files[0]);
 });
 
-dropZone.addEventListener('dragover', e => {
+htmx.on(dropZone, 'dragover', e => {
     e.preventDefault();
-    dropZone.classList.add('dragover');
+    htmx.addClass(dropZone, 'dragover');
 });
 
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+htmx.on(dropZone, 'dragleave', () => htmx.removeClass(dropZone, 'dragover'));
 
-dropZone.addEventListener('drop', e => {
+htmx.on(dropZone, 'drop', e => {
     e.preventDefault();
-    dropZone.classList.remove('dragover');
+    htmx.removeClass(dropZone, 'dragover');
     if (e.dataTransfer.files[0] && selectedFile === null) onFileSelected(e.dataTransfer.files[0]);
 });
 
 function onFileSelected(file) {
     selectedFile = file;
-    // Use htmx to fetch the options form — server renders max values from config
     htmx.ajax('GET', '/upload/options?name=' + encodeURIComponent(file.name), {
         target: '#drop-zone',
         swap: 'innerHTML'
     });
 }
 
-// ── Upload (called from onclick in server-rendered options form) ──────────────
-
 async function startUpload() {
-    const expiryDays = document.getElementById('expiry-days')?.value;
-    const downloadLimit = document.getElementById('download-limit')?.value;
+    const expiryDays    = htmx.find('#expiry-days')?.value;
+    const downloadLimit = htmx.find('#download-limit')?.value;
 
-    dropZone.innerHTML = `
+    htmx.swap(dropZone, `
         <div class="mb-3">
             <div class="spinner-border text-success" role="status">
                 <span class="visually-hidden">Loading\u2026</span>
             </div>
         </div>
-        <div class="drop-zone-text" id="upload-status">Encrypting\u2026</div>`;
+        <div class="drop-zone-text" id="upload-status">Encrypting\u2026</div>`,
+        { swapStyle: 'innerHTML' });
 
     try {
         const { payload, hash, base64urlKey } = await encryptFile(await selectedFile.arrayBuffer());
@@ -65,38 +61,33 @@ async function startUpload() {
         const response = await fetch('/upload', { method: 'POST', body: formData });
         if (!response.ok) throw new Error(`Server error ${response.status}`);
 
-        // Server returns HTML fragment; prepend origin and append key fragment client-side
-        dropZone.innerHTML = await response.text();
+        htmx.swap(dropZone, await response.text(), { swapStyle: 'innerHTML' });
         htmx.process(dropZone);
-        const shareLink = document.getElementById('share-link');
-        shareLink.value = window.location.origin + shareLink.value + '#' + base64urlKey;
+        htmx.find('#share-link').value = window.location.origin + '/download#' + base64urlKey;
 
     } catch (err) {
-        dropZone.innerHTML = `
+        htmx.swap(dropZone, `
             <div class="drop-zone-icon mb-3">&#x26A0;</div>
             <div class="drop-zone-text mb-3">${err.message}</div>
-            <button class="btn btn-link drop-zone-text text-decoration-none" onclick="resetUpload()">Try again</button>`;
+            <button class="btn btn-link drop-zone-text text-decoration-none" onclick="resetUpload()">Try again</button>`,
+            { swapStyle: 'innerHTML' });
     }
 }
 
 function setStatus(msg) {
-    const el = document.getElementById('upload-status');
+    const el = htmx.find('#upload-status');
     if (el) el.textContent = msg;
 }
-
-// ── Reset (called from onclick in server-rendered fragments) ──────────────────
 
 function resetUpload() {
     selectedFile = null;
     fileInput.value = '';
-    dropZone.innerHTML = promptHtml;
+    htmx.swap(dropZone, promptHtml, { swapStyle: 'innerHTML' });
 }
 
-// ── Copy link (called from onclick in result fragment) ────────────────────────
-
 async function copyLink() {
-    await navigator.clipboard.writeText(document.getElementById('share-link').value);
-    const btn = document.getElementById('copy-btn');
+    await navigator.clipboard.writeText(htmx.find('#share-link').value);
+    const btn = htmx.find('#copy-btn');
     btn.textContent = 'Copied!';
     setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
 }
