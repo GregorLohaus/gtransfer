@@ -5,8 +5,7 @@
     <div class="drop-zone-icon mb-3">&#x2705;</div>
     <div class="drop-zone-text mb-3">Your file is ready to share</div>
     <div class="input-group mb-2">
-        <input type="text" id="share-link" class="form-control form-control-sm"
-               th:value="@{/download/{id}(id=${id})}" readonly>
+        <input type="text" id="share-link" class="form-control form-control-sm" readonly>
         <button id="copy-btn" class="btn btn-outline-success btn-sm" onclick="copyLink()">Copy</button>
     </div>
     <button class="btn btn-link drop-zone-text text-decoration-none small" onclick="resetUpload()">
