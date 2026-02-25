@@ -1,28 +1,17 @@
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
-
-const views = {
-    prompt:    document.getElementById('view-prompt'),
-    selected:  document.getElementById('view-selected'),
-    uploading: document.getElementById('view-uploading'),
-    result:    document.getElementById('view-result'),
-};
+const promptHtml = dropZone.innerHTML;
 
 let selectedFile = null;
-
-function showView(name) {
-    Object.entries(views).forEach(([key, el]) => el.classList.toggle('d-none', key !== name));
-}
 
 // ── File selection ────────────────────────────────────────────────────────────
 
 dropZone.addEventListener('click', () => {
-    if (views.prompt.classList.contains('d-none')) return;
-    fileInput.click();
+    if (selectedFile === null) fileInput.click();
 });
 
 fileInput.addEventListener('change', e => {
-    if (e.target.files[0]) selectFile(e.target.files[0]);
+    if (e.target.files[0]) onFileSelected(e.target.files[0]);
 });
 
 dropZone.addEventListener('dragover', e => {
@@ -35,101 +24,78 @@ dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover
 dropZone.addEventListener('drop', e => {
     e.preventDefault();
     dropZone.classList.remove('dragover');
-    if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files[0] && selectedFile === null) onFileSelected(e.dataTransfer.files[0]);
 });
 
-function selectFile(file) {
+function onFileSelected(file) {
     selectedFile = file;
-    document.getElementById('selected-name').textContent = file.name;
-    showView('selected');
+    // Use htmx to fetch the options form — server renders max values from config
+    htmx.ajax('GET', '/upload/options?name=' + encodeURIComponent(file.name), {
+        target: '#drop-zone',
+        swap: 'innerHTML'
+    });
 }
 
-document.getElementById('reset-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    selectedFile = null;
-    fileInput.value = '';
-    showView('prompt');
-});
+// ── Upload (called from onclick in server-rendered options form) ──────────────
 
-document.getElementById('new-upload-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    selectedFile = null;
-    fileInput.value = '';
-    showView('prompt');
-});
+async function startUpload() {
+    const expiryDays = document.getElementById('expiry-days')?.value;
+    const downloadLimit = document.getElementById('download-limit')?.value;
 
-// ── Upload ────────────────────────────────────────────────────────────────────
-
-document.getElementById('upload-btn').addEventListener('click', async e => {
-    e.stopPropagation();
-    await upload();
-});
-
-function setStatus(msg) {
-    document.getElementById('upload-status').textContent = msg;
-}
-
-async function upload() {
-    const file = selectedFile;
-    showView('uploading');
+    dropZone.innerHTML = `
+        <div class="mb-3">
+            <div class="spinner-border text-success" role="status">
+                <span class="visually-hidden">Loading\u2026</span>
+            </div>
+        </div>
+        <div class="drop-zone-text" id="upload-status">Encrypting\u2026</div>`;
 
     try {
-        setStatus('Generating encryption key\u2026');
-        const key = await crypto.subtle.generateKey(
-            { name: 'AES-GCM', length: 256 },
-            true,
-            ['encrypt', 'decrypt']
-        );
-
-        const iv = crypto.getRandomValues(new Uint8Array(12));
-
-        setStatus('Encrypting\u2026');
-        const ciphertext = await crypto.subtle.encrypt(
-            { name: 'AES-GCM', iv },
-            key,
-            await file.arrayBuffer()
-        );
-
-        // Payload: 12-byte IV prepended to ciphertext
-        const payload = new Uint8Array(12 + ciphertext.byteLength);
-        payload.set(iv, 0);
-        payload.set(new Uint8Array(ciphertext), 12);
-
-        // SHA-256(rawKey) → file identifier sent to server (server never sees the key)
-        const rawKey = await crypto.subtle.exportKey('raw', key);
-        const hash = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', rawKey)))
-            .map(b => b.toString(16).padStart(2, '0'))
-            .join('');
-
-        // Base64url-encode key for URL fragment
-        const base64urlKey = btoa(String.fromCharCode(...new Uint8Array(rawKey)))
-            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+        const { payload, hash, base64urlKey } = await encryptFile(await selectedFile.arrayBuffer());
 
         setStatus('Uploading\u2026');
+
         const formData = new FormData();
-        formData.append('file', new Blob([payload]), file.name);
+        formData.append('file', new Blob([payload]), selectedFile.name);
         formData.append('hash', hash);
-        formData.append('name', file.name);
+        formData.append('name', selectedFile.name);
+        if (expiryDays)    formData.append('expiryDays', expiryDays);
+        if (downloadLimit) formData.append('downloadLimit', downloadLimit);
 
         const response = await fetch('/upload', { method: 'POST', body: formData });
-        if (!response.ok) throw new Error(`Server responded with ${response.status}`);
+        if (!response.ok) throw new Error(`Server error ${response.status}`);
 
-        const { id } = await response.json();
-        document.getElementById('share-link').value =
-            `${window.location.origin}/download/${id}#${base64urlKey}`;
-        showView('result');
+        // Server returns HTML fragment; append key fragment client-side
+        dropZone.innerHTML = await response.text();
+        htmx.process(dropZone);
+        document.getElementById('share-link').value += '#' + base64urlKey;
 
     } catch (err) {
-        setStatus(`Error: ${err.message}`);
+        dropZone.innerHTML = `
+            <div class="drop-zone-icon mb-3">&#x26A0;</div>
+            <div class="drop-zone-text mb-3">${err.message}</div>
+            <button class="btn btn-link drop-zone-text text-decoration-none" onclick="resetUpload()">Try again</button>`;
     }
 }
 
-// ── Copy link ─────────────────────────────────────────────────────────────────
+function setStatus(msg) {
+    const el = document.getElementById('upload-status');
+    if (el) el.textContent = msg;
+}
 
-document.getElementById('copy-btn').addEventListener('click', async e => {
-    e.stopPropagation();
+// ── Reset (called from onclick in server-rendered fragments) ──────────────────
+
+function resetUpload() {
+    selectedFile = null;
+    fileInput.value = '';
+    dropZone.innerHTML = promptHtml;
+}
+
+// ── Copy link (called from onclick in result fragment) ────────────────────────
+
+async function copyLink() {
     await navigator.clipboard.writeText(document.getElementById('share-link').value);
     const btn = document.getElementById('copy-btn');
     btn.textContent = 'Copied!';
     setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
-});
+}

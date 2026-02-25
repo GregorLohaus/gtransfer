@@ -10,6 +10,7 @@ import com.gregor_lohaus.gtransfer.config.types.ServletConfig;
 import com.gregor_lohaus.gtransfer.config.types.SpringConfig;
 import com.gregor_lohaus.gtransfer.config.types.StorageService;
 import com.gregor_lohaus.gtransfer.config.types.StorageServiceType;
+import com.gregor_lohaus.gtransfer.config.types.UploadConfig;
 
 public class DefaultConfig {
   public static final Config config;
@@ -42,6 +43,12 @@ public class DefaultConfig {
     sc.servletConfig = svc;
 
     c.springConfig = sc;
+
+    UploadConfig uc = new UploadConfig();
+    uc.maxDownloadLimit = 100;
+    uc.maxExpiryDays = 30;
+    c.uploadConfig = uc;
+
     config = c;
   }
 }
