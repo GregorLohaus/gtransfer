@@ -19,4 +19,9 @@ public class DummyStorageService extends AbstractStorageService {
   public Optional<byte[]> get(String id) {
     return Optional.empty();
   }
+
+  @Override
+  public boolean delete(String id) {
+    return false;
+  }
 }

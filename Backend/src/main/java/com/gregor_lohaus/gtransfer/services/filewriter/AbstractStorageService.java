@@ -13,4 +13,5 @@ public abstract class AbstractStorageService {
 
   abstract public OptionalLong put(String id, byte[] data);
   abstract public Optional<byte[]> get(String id);
+  abstract public boolean delete(String id);
 }

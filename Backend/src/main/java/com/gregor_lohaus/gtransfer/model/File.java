@@ -15,6 +15,8 @@ public class File {
   private String name;
   private LocalDateTime expireyDateTime;
   private Integer downloadLimit;
+  @Column(columnDefinition = "integer default 0")
+  private int downloads = 0;
   public LocalDateTime getExpireyDateTime() {
 	return expireyDateTime;
 }
@@ -44,6 +46,12 @@ public class File {
   }
   public void setDownloadLimit(Integer downloadLimit) {
     this.downloadLimit = downloadLimit;
+  }
+  public int getDownloads() {
+    return downloads;
+  }
+  public void setDownloads(int downloads) {
+    this.downloads = downloads;
   }
   public File(String id, String path, String name, LocalDateTime expDateTime) {
     this.path = path;
