@@ -5,9 +5,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import com.gregor_lohaus.gtransfer.config.types.Config;
-
+// import com.google.gson.Gson;
+// import com.google.gson.GsonBuilder;
 import org.springframework.boot.EnvironmentPostProcessor;
-// import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.boot.SpringApplication;
 import org.springframework.core.env.ConfigurableEnvironment;
 
@@ -41,6 +41,10 @@ public class ConfigEnvironmentPostProcessor implements EnvironmentPostProcessor 
 				System.exit(1);
 			}
 			Config defaultConfig = DefaultConfig.config;
+			// Gson gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
+			// String json = gson.toJson(defaultConfig);
+			// System.out.println(json);
+			
 			table = ConfigSerializer.toToml(defaultConfig);
 			toml.write(CONFIG_FILE_PATH, table);
 		}

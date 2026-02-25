@@ -50,6 +50,8 @@ public class DefaultConfig {
     svc2.port = 8080;
     SslConfig ssl = new SslConfig();
     ssl.enabled = false;
+    ssl.certificatePrivateKey = "";
+    ssl.certificate = "";
     svc2.sslConfig = ssl;
     c.serverConfig = svc2;
 
