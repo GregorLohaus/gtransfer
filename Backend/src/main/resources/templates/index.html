@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GTransfer</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/dist/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <script th:src="@{/webjars/bootstrap/dist/js/bootstrap.bundle.min.js}" defer></script>
+    <script th:src="@{/webjars/htmx.org/dist/htmx.min.js}" defer></script>
+    <script th:src="@{/upload.js}" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <nav class="navbar px-4 pt-3">
+        <a class="brand fw-bold text-decoration-none fs-4" href="/">G<span>Transfer</span></a>
+        <span class="badge-e2e rounded-pill fw-medium px-3 py-1">&#x1F512; End-to-end encrypted</span>
+    </nav>
+
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5 px-3">
+        <div class="row align-items-center g-5" style="max-width: 960px; width: 100%;">
+            <div class="col-lg-5">
+                <h1 class="hero-title">Send files.<br><span>Privately.</span></h1>
+                <p class="hero-subtitle mt-3">
+                    Share files of any size with end-to-end encryption.
+                    No account needed. Files are encrypted before they leave your device.
+                </p>
+            </div>
+            <div class="col-lg-7 d-flex justify-content-center justify-content-lg-end">
+                <div id="drop-zone" class="drop-zone text-center py-5 px-4 w-100">
+
+                    <!-- State: prompt (default) -->
+                    <div id="view-prompt">
+                        <div class="drop-zone-icon mb-3">&#x1F4C2;</div>
+                        <div class="mb-2">
+                            <strong>Choose a file</strong>
+                            <span class="drop-zone-text"> or drag and drop here</span>
+                        </div>
+                        <div class="drop-zone-text small">Any file type &middot; Up to <span th:text="${maxFileSize}">10GB</span></div>
+                    </div>
+
+                    <!-- State: file selected -->
+                    <div id="view-selected" class="d-none">
+                        <div class="drop-zone-icon mb-3">&#x1F4C4;</div>
+                        <div class="fw-medium mb-3" id="selected-name"></div>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button id="upload-btn" class="btn btn-success px-4">Send</button>
+                            <button id="reset-btn" class="btn btn-link drop-zone-text text-decoration-none">Change file</button>
+                        </div>
+                    </div>
+
+                    <!-- State: uploading -->
+                    <div id="view-uploading" class="d-none">
+                        <div class="mb-3">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="drop-zone-text" id="upload-status">Preparing&hellip;</div>
+                    </div>
+
+                    <!-- State: result -->
+                    <div id="view-result" class="d-none">
+                        <div class="drop-zone-icon mb-3">&#x2705;</div>
+                        <div class="drop-zone-text mb-3">Your file is ready to share</div>
+                        <div class="input-group mb-2">
+                            <input type="text" id="share-link" class="form-control form-control-sm" readonly>
+                            <button id="copy-btn" class="btn btn-outline-success btn-sm">Copy</button>
+                        </div>
+                        <button id="new-upload-btn" class="btn btn-link drop-zone-text text-decoration-none small">
+                            Send another file
+                        </button>
+                    </div>
+
+                    <input type="file" id="file-input" hidden>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="text-center p-4 small">
+        <a href="https://github.com/gregor-lohaus/gtransfer">Open source</a>
+        &middot; No tracking &middot; No ads
+    </footer>
+
+</body>
+</html>
