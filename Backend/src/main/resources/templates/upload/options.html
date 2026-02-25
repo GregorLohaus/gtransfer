@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="form">
+    <div class="drop-zone-icon mb-3">&#x1F4C4;</div>
+    <div class="fw-medium mb-3 text-truncate" th:text="${name}">filename</div>
+
+    <div class="row g-2 mb-3 text-start">
+        <div class="col-6">
+            <label for="expiry-days" class="form-label drop-zone-text small">Expires after (days)</label>
+            <input type="number" id="expiry-days" class="form-control form-control-sm"
+                   min="1" th:max="${maxExpiryDays}" th:value="${maxExpiryDays}">
+        </div>
+        <div class="col-6">
+            <label for="download-limit" class="form-label drop-zone-text small">Download limit</label>
+            <input type="number" id="download-limit" class="form-control form-control-sm"
+                   min="1" th:max="${maxDownloadLimit}" placeholder="Unlimited">
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 justify-content-center">
+        <button class="btn btn-success px-4" onclick="startUpload()">Send</button>
+        <button class="btn btn-link drop-zone-text text-decoration-none" onclick="resetUpload()">Change file</button>
+    </div>
+</div>
+</body>
+</html>
