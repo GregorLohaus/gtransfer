@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${filename != null ? filename + ' — GTransfer' : 'GTransfer'}">GTransfer</title>
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap/dist/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/style.css}">
+    <script th:src="@{/download.js}" defer></script>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <nav class="navbar px-4 pt-3">
+        <a class="brand fw-bold text-decoration-none fs-4" href="/">G<span>Transfer</span></a>
+        <span class="badge-e2e rounded-pill fw-medium px-3 py-1">&#x1F512; End-to-end encrypted</span>
+    </nav>
+
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5 px-3">
+        <div id="download-state" class="drop-zone text-center py-5 px-4" style="max-width: 520px; width: 100%;">
+            <div class="drop-zone-icon mb-3">&#x1F512;</div>
+            <div class="fw-medium mb-2" th:if="${filename != null}" th:text="${filename}"></div>
+            <div class="drop-zone-text" id="download-status">Preparing&hellip;</div>
+        </div>
+    </main>
+
+    <footer class="text-center p-4 small">
+        <a href="https://github.com/gregor-lohaus/gtransfer">Open source</a>
+        &middot; No tracking &middot; No ads
+    </footer>
+
+</body>
+</html>
