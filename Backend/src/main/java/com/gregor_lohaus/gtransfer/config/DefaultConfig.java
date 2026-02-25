@@ -6,8 +6,10 @@ import com.gregor_lohaus.gtransfer.config.types.Config;
 import com.gregor_lohaus.gtransfer.config.types.DataSourceConfig;
 import com.gregor_lohaus.gtransfer.config.types.JpaConfig;
 import com.gregor_lohaus.gtransfer.config.types.MultipartConfig;
+import com.gregor_lohaus.gtransfer.config.types.ServerConfig;
 import com.gregor_lohaus.gtransfer.config.types.ServletConfig;
 import com.gregor_lohaus.gtransfer.config.types.SpringConfig;
+import com.gregor_lohaus.gtransfer.config.types.SslConfig;
 import com.gregor_lohaus.gtransfer.config.types.StorageService;
 import com.gregor_lohaus.gtransfer.config.types.StorageServiceType;
 import com.gregor_lohaus.gtransfer.config.types.UploadConfig;
@@ -43,6 +45,13 @@ public class DefaultConfig {
     sc.servletConfig = svc;
 
     c.springConfig = sc;
+
+    ServerConfig svc2 = new ServerConfig();
+    svc2.port = 8080;
+    SslConfig ssl = new SslConfig();
+    ssl.enabled = false;
+    svc2.sslConfig = ssl;
+    c.serverConfig = svc2;
 
     UploadConfig uc = new UploadConfig();
     uc.maxDownloadLimit = 100;
