@@ -34,6 +34,16 @@ dependencies {
 	implementation 'io.github.wasabithumb:jtoml-serializer-reflect:1.4.2'
 }
 
+graalvmNative {
+	binaries {
+		main {
+			buildArgs.add("--static-nolibc")
+			buildArgs.add("--libc=glibc")
+			buildArgs.add("--verbose")
+		}
+	}
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }

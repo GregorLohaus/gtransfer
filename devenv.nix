@@ -36,9 +36,9 @@
   scripts.build-backend.exec = ''
     gradle -p ./Backend build && echo $(date) > ./Backend/buildcompleted.at
   '';
-
-  enterShell = ''
-  '';
+  # enterShell = ''
+  #   PATH="$(pwd)/x86_64-linux-musl-native/bin:$PATH"
+  # '';
 
   # https://devenv.sh/tasks/
   # tasks = {
