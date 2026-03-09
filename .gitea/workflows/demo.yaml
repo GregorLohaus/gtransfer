@@ -4,7 +4,12 @@ on: [push]
 
 jobs:
   Explore-Gitea-Actions:
-    runs-on: gitea.gregorlohaus.com/gregor/graal
+    runs-on: ubuntu-lates
+    container:
+      iamge: gitea.gregorlohaus.com/gregor/graal:latest
+      credentials:
+        username: lohausgregor@gmail.com
+        password: ${{ secrets.REGPASS }}
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ gitea.event_name }} event."
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by Gitea!"
