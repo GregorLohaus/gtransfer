@@ -23,6 +23,8 @@ jobs:
         run: |
           ls ${{ gitea.workspace }}
       - name: build
-        working-directory: ${{ gitea.workspace }}/Backend 
+        working-directory: ${{ gitea.workspace }}/Backend
+        env:
+          JAVA_HOME: /root/.sdkman/candidates/java/current 
         run: /root/.sdkman/candidates/gradle/9.4.0/bin/gradle build 
       - run: echo "🍏 This job's status is ${{ job.status }}."
