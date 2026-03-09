@@ -1,0 +1,41 @@
+name: Deploy
+run-name: ${{ gitea.actor }} deployed latest version 🚀
+on:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  Explore-Gitea-Actions:
+    runs-on: x86
+    container:
+      image: gitea.gregorlohaus.com/gregor/graal:latest
+      credentials:
+        username: lohausgregor@gmail.com
+        password: ${{ secrets.REGPASS }}
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: /usr/local/bin/docker-entrypoint.sh postgres &
+      - name: build
+        working-directory: ${{ gitea.workspace }}/Backend
+        env:
+          JAVA_HOME: /root/.sdkman/candidates/java/current 
+        run: /root/.sdkman/candidates/gradle/9.4.0/bin/gradle build
+      - name: deploy
+        shell: bash
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add <(echo "${{ secrets.DEPLOYSSHKEY }}")
+          mkdir -p ~/.ssh
+          ssh-keyscan 162.55.217.172 >> ~/.ssh/known_hosts
+          scp ${{ gitea.workspace }}/Backend/build/native/nativeCompile/gtransfer anon@162.55.217.172:/home/anon/.local/bin/gtransfernew
+          ssh anon@162.55.217.172 "chmod +x /home/anon/.local/bin/gtransfernew"
+          ssh anon@162.55.217.172 "mv /home/anon/.local/bin/gtransfer /home/anon/.local/bin/gtransferback"
+          ssh anon@162.55.217.172 "mv /home/anon/.local/bin/gtransfernew /home/anon/.local/bin/gtransfer"
+          ssh anon@162.55.217.172 "sudo systemctl restart gtransfer"
+      # - name: upload binary
+      #   uses: https://gitea.com/actions/gitea-upload-artifact@v4
+      #   with:
+      #     name: gtransfer
+      #     path: ${{ gitea.workspace }}/Backend/build/native/nativeCompile/gtransfer
