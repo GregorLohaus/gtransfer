@@ -22,5 +22,7 @@ jobs:
       - name: List files in the repository
         run: |
           ls ${{ gitea.workspace }}
-      - run: cd ${{ gitea.workspace }}/Backend && gradle build 
+      - name: build
+        working-directory: ${{ gitea.workspace }}/Backend 
+        run: gradle build 
       - run: echo "🍏 This job's status is ${{ job.status }}."
