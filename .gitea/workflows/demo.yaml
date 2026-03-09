@@ -11,20 +11,16 @@ jobs:
         username: lohausgregor@gmail.com
         password: ${{ secrets.REGPASS }}
     steps:
-      - run: echo "🎉 The job was automatically triggered by a ${{ gitea.event_name }} event."
-      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by Gitea!"
-      - run: echo "🔎 The name of your branch is ${{ gitea.ref }} and your repository is ${{ gitea.repository }}."
       - name: Check out repository code
         uses: actions/checkout@v4
-      - run: echo "💡 The ${{ gitea.repository }} repository has been cloned to the runner."
-      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
       - run: /usr/local/bin/docker-entrypoint.sh postgres &
-      - name: List files in the repository
-        run: |
-          ls ${{ gitea.workspace }}
       - name: build
         working-directory: ${{ gitea.workspace }}/Backend
         env:
           JAVA_HOME: /root/.sdkman/candidates/java/current 
         run: /root/.sdkman/candidates/gradle/9.4.0/bin/gradle build 
-      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - name: upload binary
+        uses: https://gitea.com/actions/gitea-upload-artifact@v4
+        with:
+          name: gtransfer
+          path: ${{ gitea.workspace }}/Backend/build/native/nativeCompile/gtransfer
