@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   Explore-Gitea-Actions:
-    runs-on: ubuntu-lates
+    runs-on: ubuntu-latest
     container:
       iamge: gitea.gregorlohaus.com/gregor/graal:latest
       credentials:
