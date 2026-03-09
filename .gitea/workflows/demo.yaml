@@ -24,6 +24,8 @@ jobs:
         run: |
           eval "$(ssh-agent -s)"
           ssh-add <(echo "${{ secrets.DEPLOYSSHKEY }}")
+          mkdir -p ~/.ssh
+          ssh-keyscan 162.55.217.172 >> ~/.ssh/known_hosts
           scp ${{ gitea.workspace }}/Backend/build/native/nativeCompile/gtransfer anon@162.55.217.172:/home/anon/.local/bin/gtransfernew
           ssh anon@162.55.217.172 "chmod +x /home/anon/.local/bin/gtransfernew"
           ssh anon@162.55.217.172 "mv /home/anon/.local/bin/gtransfernew /home/anon/.local/bin/gtransfer"
