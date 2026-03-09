@@ -18,7 +18,15 @@ jobs:
         working-directory: ${{ gitea.workspace }}/Backend
         env:
           JAVA_HOME: /root/.sdkman/candidates/java/current 
-        run: /root/.sdkman/candidates/gradle/9.4.0/bin/gradle build 
+        run: /root/.sdkman/candidates/gradle/9.4.0/bin/gradle build
+      - name: deploy
+        run: |
+          eval "$(ssh-agent -s)"
+          ssh-add <(echo "${{ secrets.DEPLOYSSHKEY }}")
+          scp ${{ gitea.workspace }}/Backend/build/native/nativeCompile/gtransfer anon@162.55.217.172:/home/anon/.local/bin/gtransfernew
+          ssh anon@162.55.217.172 "chmod +x /home/anon/.local/bin/gtransfernew"
+          ssh anon@162.55.217.172 "mv /home/anon/.local/bin/gtransfernew /home/anon/.local/bin/gtransfer"
+          ssh anon@162.55.217.172 "sudo systemctl restart gtransfer"
       - name: upload binary
         uses: https://gitea.com/actions/gitea-upload-artifact@v4
         with:

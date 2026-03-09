@@ -1,6 +1,6 @@
 FROM postgres:15.17-trixie
 RUN apt update
-RUN apt install -y curl wget zip unzip build-essential zlib1g-dev nodejs
+RUN apt install -y curl wget zip unzip build-essential zlib1g-dev nodejs ssh
 RUN curl -s "https://get.sdkman.io?ci=true" | bash
 SHELL ["/bin/bash", "-c"]
 RUN source "/root/.sdkman/bin/sdkman-init.sh" \
