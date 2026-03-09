@@ -20,6 +20,7 @@ jobs:
           JAVA_HOME: /root/.sdkman/candidates/java/current 
         run: /root/.sdkman/candidates/gradle/9.4.0/bin/gradle build
       - name: deploy
+        shell: bash
         run: |
           eval "$(ssh-agent -s)"
           ssh-add <(echo "${{ secrets.DEPLOYSSHKEY }}")
