@@ -1,6 +1,9 @@
-name: Gitea Actions Demo
-run-name: ${{ gitea.actor }} is testing out Gitea Actions 🚀
-on: [push]
+name: Deploy
+run-name: ${{ gitea.actor }} deployed latest version 🚀
+on:
+  push:
+    branches:
+      - "main"
 
 jobs:
   Explore-Gitea-Actions:
@@ -28,10 +31,11 @@ jobs:
           ssh-keyscan 162.55.217.172 >> ~/.ssh/known_hosts
           scp ${{ gitea.workspace }}/Backend/build/native/nativeCompile/gtransfer anon@162.55.217.172:/home/anon/.local/bin/gtransfernew
           ssh anon@162.55.217.172 "chmod +x /home/anon/.local/bin/gtransfernew"
+          ssh anon@162.55.217.172 "mv /home/anon/.local/bin/gtransfer /home/anon/.local/bin/gtransferback"
           ssh anon@162.55.217.172 "mv /home/anon/.local/bin/gtransfernew /home/anon/.local/bin/gtransfer"
           ssh anon@162.55.217.172 "sudo systemctl restart gtransfer"
-      - name: upload binary
-        uses: https://gitea.com/actions/gitea-upload-artifact@v4
-        with:
-          name: gtransfer
-          path: ${{ gitea.workspace }}/Backend/build/native/nativeCompile/gtransfer
+      # - name: upload binary
+      #   uses: https://gitea.com/actions/gitea-upload-artifact@v4
+      #   with:
+      #     name: gtransfer
+      #     path: ${{ gitea.workspace }}/Backend/build/native/nativeCompile/gtransfer
