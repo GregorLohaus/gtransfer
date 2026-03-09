@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   Explore-Gitea-Actions:
-    runs-on: ubuntu-latest-x86
+    runs-on: x86
     container:
       image: gitea.gregorlohaus.com/gregor/graal:latest
       credentials:
