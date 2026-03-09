@@ -2,7 +2,9 @@
 
 A self-hosted, end-to-end encrypted file transfer service. The server stores only ciphertext and never has access to encryption keys or plaintext.
 
-## How encryption works
+### [Canonical Repo Url](https://gitea.gregorlohaus.com/gregor/gtransfer)
+
+## Encryption flow
 
 ### Upload
 
