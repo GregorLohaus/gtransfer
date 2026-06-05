@@ -49,9 +49,6 @@ public class File {
   public void setChunkCount(Integer chunkCount) {
     this.chunkCount = chunkCount;
   }
-  public boolean isChunked() {
-    return chunkCount != null;
-  }
   public Long getSize() {
     return size;
   }

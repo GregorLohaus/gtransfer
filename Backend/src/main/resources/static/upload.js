@@ -50,17 +50,16 @@ async function startUpload() {
         { swapStyle: 'innerHTML' });
 
     try {
-        const { key, hash, base64urlKey } = await generateFileKey();
-        const chunkCount = Math.max(1, Math.ceil(selectedFile.size / DEFAULT_CHUNK_SIZE));
+        const encryptedFile = await encryptFile(selectedFile);
 
-        for (let index = 0; index < chunkCount; index++) {
+        for await (const { index, payload } of encryptedFile.chunks) {
+            const chunkCount = encryptedFile.chunkCount;
             setProgress(`Encrypting chunk ${index + 1} of ${chunkCount}\u2026`, index, chunkCount);
-            const payload = await encryptFileChunk(selectedFile, index, key);
 
             setProgress(`Uploading chunk ${index + 1} of ${chunkCount}\u2026`, index + 0.5, chunkCount);
             const chunkData = new FormData();
             chunkData.append('chunk', new Blob([payload]), String(index));
-            chunkData.append('hash', hash);
+            chunkData.append('hash', encryptedFile.hash);
             chunkData.append('index', index);
 
             const chunkResponse = await fetch('/upload/chunk', { method: 'POST', body: chunkData });
@@ -68,12 +67,12 @@ async function startUpload() {
             setProgress(`Uploaded chunk ${index + 1} of ${chunkCount}`, index + 1, chunkCount);
         }
 
-        setProgress('Finalizing\u2026', chunkCount, chunkCount);
+        setProgress('Finalizing\u2026', encryptedFile.chunkCount, encryptedFile.chunkCount);
         const metadata = new FormData();
-        metadata.append('hash', hash);
+        metadata.append('hash', encryptedFile.hash);
         metadata.append('name', selectedFile.name);
-        metadata.append('chunkCount', chunkCount);
-        metadata.append('size', selectedFile.size);
+        metadata.append('chunkCount', encryptedFile.chunkCount);
+        metadata.append('size', encryptedFile.size);
         if (expiryDays)    metadata.append('expiryDays', expiryDays);
         if (downloadLimit) metadata.append('downloadLimit', downloadLimit);
 
@@ -82,7 +81,7 @@ async function startUpload() {
 
         htmx.swap(dropZone, await response.text(), { swapStyle: 'innerHTML' });
         htmx.process(dropZone);
-        htmx.find('#share-link').value = window.location.origin + '/download#' + base64urlKey;
+        htmx.find('#share-link').value = window.location.origin + '/download#' + encryptedFile.base64urlKey;
 
     } catch (err) {
         htmx.swap(dropZone, `

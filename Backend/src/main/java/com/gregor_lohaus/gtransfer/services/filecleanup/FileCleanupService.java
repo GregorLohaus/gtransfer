@@ -51,11 +51,6 @@ public class FileCleanupService {
     }
 
     private void deleteStoredFile(File file) {
-        if (!file.isChunked()) {
-            storageService.delete(file.getId());
-            return;
-        }
-
         for (int i = 0; i < file.getChunkCount(); i++) {
             storageService.delete(StorageKeys.chunk(file.getId(), i));
         }

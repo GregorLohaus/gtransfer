@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -65,7 +64,7 @@ public class DownloadController {
             return ResponseEntity.badRequest().build();
         }
 
-        Optional<byte[]> data = storageService.get(storageKey(file, index));
+        Optional<byte[]> data = storageService.get(StorageKeys.chunk(file.getId(), index));
         if (data.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
@@ -96,39 +95,6 @@ public class DownloadController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/download/{id}/data")
-    @ResponseBody
-    @Transactional
-    public ResponseEntity<byte[]> data(@PathVariable String id) {
-        AvailableFile available = getAvailableFile(id);
-        if (!available.found()) {
-            return ResponseEntity.status(available.status()).build();
-        }
-
-        File file = available.file();
-        if (file.isChunked()) {
-            return ResponseEntity.status(HttpStatus.GONE).build();
-        }
-
-        Optional<byte[]> data = storageService.get(id);
-        if (data.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        file.setDownloads(file.getDownloads() + 1);
-        fileRepository.save(file);
-
-        if (file.getDownloadLimit() != null && file.getDownloads() >= file.getDownloadLimit()) {
-            deleteStoredFile(file);
-            fileRepository.delete(file);
-        }
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition(file.getName()))
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(data.get());
-    }
-
     private AvailableFile getAvailableFile(String id) {
         Optional<File> fileOpt = fileRepository.findById(id);
         if (fileOpt.isEmpty()) {
@@ -152,26 +118,9 @@ public class DownloadController {
     }
 
     private void deleteStoredFile(File file) {
-        if (!file.isChunked()) {
-            storageService.delete(file.getId());
-            return;
-        }
-
         for (int i = 0; i < file.getChunkCount(); i++) {
             storageService.delete(StorageKeys.chunk(file.getId(), i));
         }
-    }
-
-    private String storageKey(File file, int index) {
-        if (!file.isChunked()) {
-            return file.getId();
-        }
-        return StorageKeys.chunk(file.getId(), index);
-    }
-
-    private String contentDisposition(String filename) {
-        return "attachment; filename=\""
-                + filename.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 
     private record AvailableFile(File file, HttpStatus status) {
