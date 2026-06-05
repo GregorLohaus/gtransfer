@@ -20,7 +20,10 @@
     <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5 px-3">
         <div id="download-state" class="drop-zone text-center py-5 px-4" style="max-width: 520px; width: 100%;">
             <div class="drop-zone-icon mb-3">&#x1F512;</div>
-<div class="drop-zone-text" id="download-status">Preparing&hellip;</div>
+            <div class="drop-zone-text mb-3" id="download-status">Preparing&hellip;</div>
+            <div class="progress" role="progressbar" aria-label="Download progress" aria-valuemin="0" aria-valuemax="100">
+                <div id="download-progress" class="progress-bar bg-success" style="width: 0%">0%</div>
+            </div>
         </div>
     </main>
 

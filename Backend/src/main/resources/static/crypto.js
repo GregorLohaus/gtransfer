@@ -1,3 +1,33 @@
+var DEFAULT_CHUNK_SIZE = 4 * 1024 * 1024;
+
+async function generateFileKey() {
+    const key = await crypto.subtle.generateKey(
+        { name: 'AES-GCM', length: 256 },
+        true,
+        ['encrypt', 'decrypt']
+    );
+
+    const rawKey = await crypto.subtle.exportKey('raw', key);
+    const hash = await hashKey(rawKey);
+    const base64urlKey = encodeKey(rawKey);
+
+    return { key, rawKey, hash, base64urlKey };
+}
+
+async function encryptFileChunk(file, index, key, chunkSize = DEFAULT_CHUNK_SIZE) {
+    const start = index * chunkSize;
+    const end = Math.min(start + chunkSize, file.size);
+    const plaintext = await file.slice(start, end).arrayBuffer();
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const ciphertext = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, plaintext);
+
+    const payload = new Uint8Array(12 + ciphertext.byteLength);
+    payload.set(iv, 0);
+    payload.set(new Uint8Array(ciphertext), 12);
+
+    return payload;
+}
+
 async function encryptFile(arrayBuffer) {
     const key = await crypto.subtle.generateKey(
         { name: 'AES-GCM', length: 256 },
@@ -30,6 +60,10 @@ async function hashKey(rawKey) {
 }
 
 async function decryptFile(payload, key) {
+    return decryptChunk(payload, key);
+}
+
+async function decryptChunk(payload, key) {
     const bytes = new Uint8Array(payload);
     const iv = bytes.slice(0, 12);
     const ciphertext = bytes.slice(12);

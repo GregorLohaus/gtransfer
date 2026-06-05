@@ -11,29 +11,61 @@ if (!fragment) {
         'raw', rawKeyBytes, { name: 'AES-GCM' }, false, ['decrypt']
     );
 
-    setStatus('Downloading\u2026');
-    const response = await fetch('/download/' + id + '/data');
+    setProgress('Loading metadata\u2026', 0, 1);
+    const metadataResponse = await fetch('/download/' + id + '/metadata');
 
-    if (response.status === 410) {
+    if (metadataResponse.status === 410) {
         showError('This file has expired or reached its download limit.');
-    } else if (!response.ok) {
-        showError(`Download failed (${response.status}).`);
+    } else if (!metadataResponse.ok) {
+        showError(`Download failed (${metadataResponse.status}).`);
     } else {
-        const disposition = response.headers.get('Content-Disposition') || '';
-        const filename = disposition.match(/filename="?([^"]+)"?/)?.[1] || 'download';
+        const metadata = await metadataResponse.json();
+        const filename = metadata.name || 'download';
+        const chunkCount = metadata.chunkCount || 1;
+        const chunks = [];
 
-        setStatus('Decrypting\u2026');
-        const plaintext = await decryptFile(await response.arrayBuffer(), key);
+        for (let index = 0; index < chunkCount; index++) {
+            setProgress(`Downloading chunk ${index + 1} of ${chunkCount}\u2026`, index, chunkCount);
+            const chunkResponse = await fetch('/download/' + id + '/chunk/' + index);
+            if (chunkResponse.status === 410) {
+                throw new Error('This file has expired or reached its download limit.');
+            }
+            if (!chunkResponse.ok) {
+                throw new Error(`Chunk download failed (${chunkResponse.status})`);
+            }
 
+            setProgress(`Decrypting chunk ${index + 1} of ${chunkCount}\u2026`, index + 0.5, chunkCount);
+            const plaintextChunk = await decryptChunk(await chunkResponse.arrayBuffer(), key);
+            chunks.push(new Uint8Array(plaintextChunk));
+            setProgress(`Downloaded ${index + 1} of ${chunkCount} chunks`, index + 1, chunkCount);
+        }
+
+        const completeResponse = await fetch('/download/' + id + '/complete', { method: 'POST' });
+        if (!completeResponse.ok && completeResponse.status !== 404 && completeResponse.status !== 410) {
+            throw new Error(`Download completion failed (${completeResponse.status})`);
+        }
+
+        setProgress('Preparing preview\u2026', chunkCount, chunkCount);
+        const plaintext = combineChunks(chunks);
         showPreview(filename, plaintext);
     }
 } catch (err) {
-    showError('Decryption failed: ' + err.message);
+    showError(err.message);
 }
 
 function setStatus(msg) {
     const el = htmx.find('#download-status');
     if (el) el.textContent = msg;
+}
+
+function setProgress(msg, completed, total) {
+    setStatus(msg);
+    const percent = Math.round((completed / total) * 100);
+    const bar = htmx.find('#download-progress');
+    if (!bar) return;
+    bar.style.width = `${percent}%`;
+    bar.textContent = `${percent}%`;
+    bar.setAttribute('aria-valuenow', String(percent));
 }
 
 function escapeHtml(str) {
@@ -56,6 +88,17 @@ function getMimeType(filename) {
         pdf: 'application/pdf',
     };
     return types[ext] || 'application/octet-stream';
+}
+
+function combineChunks(chunks) {
+    const size = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    const combined = new Uint8Array(size);
+    let offset = 0;
+    for (const chunk of chunks) {
+        combined.set(chunk, offset);
+        offset += chunk.byteLength;
+    }
+    return combined.buffer;
 }
 
 function showPreview(filename, plaintext) {

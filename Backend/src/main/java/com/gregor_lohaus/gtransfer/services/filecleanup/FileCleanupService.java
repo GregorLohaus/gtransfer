@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.gregor_lohaus.gtransfer.model.File;
 import com.gregor_lohaus.gtransfer.model.FileRepository;
 import com.gregor_lohaus.gtransfer.services.filewriter.AbstractStorageService;
+import com.gregor_lohaus.gtransfer.services.filewriter.StorageKeys;
 
 public class FileCleanupService {
     private Boolean enabled;
@@ -43,9 +44,20 @@ public class FileCleanupService {
         };
 
         for (File file : expired) {
-            storageService.delete(file.getId());
+            deleteStoredFile(file);
             fileRepository.delete(file);
         }
         log.info("Cleaned up {} expired file(s)", expired.size());
+    }
+
+    private void deleteStoredFile(File file) {
+        if (!file.isChunked()) {
+            storageService.delete(file.getId());
+            return;
+        }
+
+        for (int i = 0; i < file.getChunkCount(); i++) {
+            storageService.delete(StorageKeys.chunk(file.getId(), i));
+        }
     }
 }

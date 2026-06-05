@@ -2,11 +2,15 @@ package com.gregor_lohaus.gtransfer.controller;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.OptionalLong;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.gregor_lohaus.gtransfer.model.File;
 import com.gregor_lohaus.gtransfer.model.FileRepository;
 import com.gregor_lohaus.gtransfer.services.filewriter.AbstractStorageService;
+import com.gregor_lohaus.gtransfer.services.filewriter.StorageKeys;
 
 @Controller
 public class UploadController {
@@ -41,21 +46,46 @@ public class UploadController {
 
     @PostMapping("/upload")
     public String upload(
-            @RequestParam("file") MultipartFile file,
             @RequestParam("hash") String hash,
             @RequestParam("name") String name,
+            @RequestParam("chunkCount") Integer chunkCount,
+            @RequestParam("size") Long size,
             @RequestParam(required = false) Integer expiryDays,
-            @RequestParam(required = false) Integer downloadLimit) throws IOException {
-
-        storageService.put(hash, file.getBytes());
+            @RequestParam(required = false) Integer downloadLimit) {
+        if (!isValidId(hash) || chunkCount == null || chunkCount < 1 || size == null || size < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid upload metadata");
+        }
 
         int days = expiryDays != null ? Math.min(expiryDays, maxExpiryDays) : maxExpiryDays;
         Integer limit = downloadLimit != null ? Math.min(downloadLimit, maxDownloadLimit) : null;
 
         File f = new File(hash, hash, name, LocalDateTime.now().plusDays(days));
+        f.setChunkCount(chunkCount);
+        f.setSize(size);
         f.setDownloadLimit(limit);
         fileRepository.save(f);
 
         return "upload/result :: view";
+    }
+
+    @PostMapping("/upload/chunk")
+    public ResponseEntity<Void> uploadChunk(
+            @RequestParam("chunk") MultipartFile chunk,
+            @RequestParam("hash") String hash,
+            @RequestParam("index") Integer index) throws IOException {
+        if (!isValidId(hash) || index == null || index < 0) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        OptionalLong written = storageService.put(StorageKeys.chunk(hash, index), chunk.getBytes());
+        if (written.isEmpty()) {
+            return ResponseEntity.internalServerError().build();
+        }
+
+        return ResponseEntity.noContent().build();
+    }
+
+    private boolean isValidId(String id) {
+        return id != null && id.matches("[a-f0-9]{64}");
     }
 }

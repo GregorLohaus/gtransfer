@@ -15,8 +15,12 @@ public class LocalStorageService extends AbstractStorageService {
   @Override
   public OptionalLong put(String id, byte[] data) {
     try {
-      Files.createDirectories(root);
-      Files.write(root.resolve(id), data);
+      Path target = root.resolve(id);
+      Path parent = target.getParent();
+      if (parent != null) {
+        Files.createDirectories(parent);
+      }
+      Files.write(target, data);
       return OptionalLong.of(data.length);
     } catch (IOException e) {
       return OptionalLong.empty();
