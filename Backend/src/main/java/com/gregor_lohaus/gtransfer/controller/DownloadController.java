@@ -1,10 +1,10 @@
 package com.gregor_lohaus.gtransfer.controller;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -12,11 +12,13 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.gregor_lohaus.gtransfer.model.File;
 import com.gregor_lohaus.gtransfer.model.FileRepository;
 import com.gregor_lohaus.gtransfer.services.filewriter.AbstractStorageService;
+import com.gregor_lohaus.gtransfer.services.filewriter.StorageKeys;
 
 @Controller
 public class DownloadController {
@@ -32,52 +34,109 @@ public class DownloadController {
         return "download/page";
     }
 
-    @GetMapping("/download/{id}/data")
+    @GetMapping("/download/{id}/metadata")
     @ResponseBody
     @Transactional
-    public ResponseEntity<byte[]> data(@PathVariable String id) {
-        Optional<File> fileOpt = fileRepository.findById(id);
-        if (fileOpt.isEmpty()) {
-            return ResponseEntity.notFound().build();
+    public ResponseEntity<Map<String, Object>> metadata(@PathVariable String id) {
+        AvailableFile available = getAvailableFile(id);
+        if (!available.found()) {
+            return ResponseEntity.status(available.status()).build();
         }
 
-        File file = fileOpt.get();
+        File file = available.file();
+        return ResponseEntity.ok(Map.of(
+                "name", file.getName(),
+                "chunkCount", file.getChunkCount()));
+    }
 
-        // Check expiry
-        if (file.getExpireyDateTime() != null && LocalDateTime.now().isAfter(file.getExpireyDateTime())) {
-            storageService.delete(id);
-            fileRepository.delete(file);
-            return ResponseEntity.status(HttpStatus.GONE).build();
+    @GetMapping("/download/{id}/chunk/{index}")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<byte[]> chunk(@PathVariable String id, @PathVariable Integer index) {
+        AvailableFile available = getAvailableFile(id);
+        if (!available.found()) {
+            return ResponseEntity.status(available.status()).build();
         }
 
-        // Check download limit before serving
-        if (file.getDownloadLimit() != null && file.getDownloads() >= file.getDownloadLimit()) {
-            storageService.delete(id);
-            fileRepository.delete(file);
-            return ResponseEntity.status(HttpStatus.GONE).build();
+        File file = available.file();
+        if (index == null || index < 0 || index >= file.getChunkCount()) {
+            return ResponseEntity.badRequest().build();
         }
 
-        Optional<byte[]> data = storageService.get(id);
+        Optional<byte[]> data = storageService.get(StorageKeys.chunk(file.getId(), index));
         if (data.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        // Increment counter
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(data.get());
+    }
+
+    @PostMapping("/download/{id}/complete")
+    @ResponseBody
+    @Transactional
+    public ResponseEntity<Void> complete(@PathVariable String id) {
+        AvailableFile available = getAvailableFile(id);
+        if (!available.found()) {
+            return ResponseEntity.status(available.status()).build();
+        }
+
+        File file = available.file();
         file.setDownloads(file.getDownloads() + 1);
         fileRepository.save(file);
 
-        // Clean up if limit now reached
         if (file.getDownloadLimit() != null && file.getDownloads() >= file.getDownloadLimit()) {
-            storageService.delete(id);
+            deleteStoredFile(file);
             fileRepository.delete(file);
         }
 
-        String disposition = "attachment; filename=\""
-                + file.getName().replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+        return ResponseEntity.noContent().build();
+    }
 
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, disposition)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(data.get());
+    private AvailableFile getAvailableFile(String id) {
+        Optional<File> fileOpt = fileRepository.findById(id);
+        if (fileOpt.isEmpty()) {
+            return AvailableFile.notFound();
+        }
+
+        File file = fileOpt.get();
+        if (file.getExpireyDateTime() != null && LocalDateTime.now().isAfter(file.getExpireyDateTime())) {
+            deleteStoredFile(file);
+            fileRepository.delete(file);
+            return AvailableFile.gone();
+        }
+
+        if (file.getDownloadLimit() != null && file.getDownloads() >= file.getDownloadLimit()) {
+            deleteStoredFile(file);
+            fileRepository.delete(file);
+            return AvailableFile.gone();
+        }
+
+        return AvailableFile.ok(file);
+    }
+
+    private void deleteStoredFile(File file) {
+        for (int i = 0; i < file.getChunkCount(); i++) {
+            storageService.delete(StorageKeys.chunk(file.getId(), i));
+        }
+    }
+
+    private record AvailableFile(File file, HttpStatus status) {
+        static AvailableFile ok(File file) {
+            return new AvailableFile(file, HttpStatus.OK);
+        }
+
+        static AvailableFile notFound() {
+            return new AvailableFile(null, HttpStatus.NOT_FOUND);
+        }
+
+        static AvailableFile gone() {
+            return new AvailableFile(null, HttpStatus.GONE);
+        }
+
+        boolean found() {
+            return file != null;
+        }
     }
 }

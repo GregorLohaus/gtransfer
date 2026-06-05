@@ -43,27 +43,44 @@ async function startUpload() {
                 <span class="visually-hidden">Loading\u2026</span>
             </div>
         </div>
-        <div class="drop-zone-text" id="upload-status">Encrypting\u2026</div>`,
+        <div class="drop-zone-text mb-3" id="upload-status">Preparing\u2026</div>
+        <div class="progress" role="progressbar" aria-label="Upload progress" aria-valuemin="0" aria-valuemax="100">
+            <div id="upload-progress" class="progress-bar bg-success" style="width: 0%">0%</div>
+        </div>`,
         { swapStyle: 'innerHTML' });
 
     try {
-        const { payload, hash, base64urlKey } = await encryptFile(await selectedFile.arrayBuffer());
+        const encryptedFile = await encryptFile(selectedFile);
 
-        setStatus('Uploading\u2026');
+        for await (const { index, payload } of encryptedFile.chunks) {
+            const chunkCount = encryptedFile.chunkCount;
+            setProgress(`Encrypting chunk ${index + 1} of ${chunkCount}\u2026`, index, chunkCount);
 
-        const formData = new FormData();
-        formData.append('file', new Blob([payload]), selectedFile.name);
-        formData.append('hash', hash);
-        formData.append('name', selectedFile.name);
-        if (expiryDays)    formData.append('expiryDays', expiryDays);
-        if (downloadLimit) formData.append('downloadLimit', downloadLimit);
+            setProgress(`Uploading chunk ${index + 1} of ${chunkCount}\u2026`, index + 0.5, chunkCount);
+            const chunkData = new FormData();
+            chunkData.append('chunk', new Blob([payload]), String(index));
+            chunkData.append('hash', encryptedFile.hash);
+            chunkData.append('index', index);
 
-        const response = await fetch('/upload', { method: 'POST', body: formData });
+            const chunkResponse = await fetch('/upload/chunk', { method: 'POST', body: chunkData });
+            if (!chunkResponse.ok) throw new Error(`Chunk upload failed (${chunkResponse.status})`);
+            setProgress(`Uploaded chunk ${index + 1} of ${chunkCount}`, index + 1, chunkCount);
+        }
+
+        setProgress('Finalizing\u2026', encryptedFile.chunkCount, encryptedFile.chunkCount);
+        const metadata = new FormData();
+        metadata.append('hash', encryptedFile.hash);
+        metadata.append('name', selectedFile.name);
+        metadata.append('chunkCount', encryptedFile.chunkCount);
+        if (expiryDays)    metadata.append('expiryDays', expiryDays);
+        if (downloadLimit) metadata.append('downloadLimit', downloadLimit);
+
+        const response = await fetch('/upload', { method: 'POST', body: metadata });
         if (!response.ok) throw new Error(`Server error ${response.status}`);
 
         htmx.swap(dropZone, await response.text(), { swapStyle: 'innerHTML' });
         htmx.process(dropZone);
-        htmx.find('#share-link').value = window.location.origin + '/download#' + base64urlKey;
+        htmx.find('#share-link').value = window.location.origin + '/download#' + encryptedFile.base64urlKey;
 
     } catch (err) {
         htmx.swap(dropZone, `
@@ -77,6 +94,16 @@ async function startUpload() {
 function setStatus(msg) {
     const el = htmx.find('#upload-status');
     if (el) el.textContent = msg;
+}
+
+function setProgress(msg, completed, total) {
+    setStatus(msg);
+    const percent = Math.round((completed / total) * 100);
+    const bar = htmx.find('#upload-progress');
+    if (!bar) return;
+    bar.style.width = `${percent}%`;
+    bar.textContent = `${percent}%`;
+    bar.setAttribute('aria-valuenow', String(percent));
 }
 
 function resetUpload() {

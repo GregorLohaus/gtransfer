@@ -13,6 +13,7 @@ public class File {
   private String id;
   private String path;
   private String name;
+  private Integer chunkCount;
   private LocalDateTime expireyDateTime;
   private Integer downloadLimit;
   @Column(columnDefinition = "integer default 0")
@@ -40,6 +41,12 @@ public class File {
   }
   public void setName(String name) {
 	this.name = name;
+  }
+  public Integer getChunkCount() {
+    return chunkCount == null ? 1 : chunkCount;
+  }
+  public void setChunkCount(Integer chunkCount) {
+    this.chunkCount = chunkCount;
   }
   public Integer getDownloadLimit() {
     return downloadLimit;
