@@ -27,6 +27,8 @@ dependencies {
 	implementation 'org.webjars:webjars-locator-lite'
 	implementation 'org.webjars.npm:htmx.org:2.0.4'
 	implementation 'org.webjars.npm:bootstrap:5.3.3'
+	implementation platform('software.amazon.awssdk:bom:2.45.1')
+	implementation 'software.amazon.awssdk:s3'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'

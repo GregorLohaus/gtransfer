@@ -22,6 +22,12 @@ public class DefaultConfig {
     StorageService ss = new StorageService();
     ss.type = StorageServiceType.LOCAL;
     ss.path = Path.of(System.getProperty("user.home"),".local","share","gtransfer").toString();
+    ss.bucket = "";
+    ss.region = "us-east-1";
+    ss.endpoint = "";
+    ss.accessKeyId = "";
+    ss.secretAccessKey = "";
+    ss.pathStyleAccessEnabled = false;
     c.storageService= ss;
     
     SpringConfig sc = new SpringConfig();
