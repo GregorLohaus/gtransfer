@@ -101,6 +101,10 @@ public class DownloadController {
         }
 
         File file = fileOpt.get();
+        if (!file.isCompleted()) {
+            return AvailableFile.notFound();
+        }
+
         if (file.getExpireyDateTime() != null && LocalDateTime.now().isAfter(file.getExpireyDateTime())) {
             deleteStoredFile(file);
             fileRepository.delete(file);

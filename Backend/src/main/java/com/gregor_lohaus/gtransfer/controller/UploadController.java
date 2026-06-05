@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -45,6 +46,7 @@ public class UploadController {
     }
 
     @PostMapping("/upload")
+    @Transactional
     public String upload(
             @RequestParam("hash") String hash,
             @RequestParam("name") String name,
@@ -58,15 +60,24 @@ public class UploadController {
         int days = expiryDays != null ? Math.min(expiryDays, maxExpiryDays) : maxExpiryDays;
         Integer limit = downloadLimit != null ? Math.min(downloadLimit, maxDownloadLimit) : null;
 
-        File f = new File(hash, hash, name, LocalDateTime.now().plusDays(days));
+        File f = fileRepository.findById(hash)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Upload has no chunks"));
+        if (f.getChunkCount() < chunkCount) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Upload is missing chunks");
+        }
+        f.setName(name);
+        f.setPath(hash);
+        f.setExpireyDateTime(LocalDateTime.now().plusDays(days));
         f.setChunkCount(chunkCount);
         f.setDownloadLimit(limit);
+        f.setCompleted(true);
         fileRepository.save(f);
 
         return "upload/result :: view";
     }
 
     @PostMapping("/upload/chunk")
+    @Transactional
     public ResponseEntity<Void> uploadChunk(
             @RequestParam("chunk") MultipartFile chunk,
             @RequestParam("hash") String hash,
@@ -79,6 +90,14 @@ public class UploadController {
         if (written.isEmpty()) {
             return ResponseEntity.internalServerError().build();
         }
+
+        File f = fileRepository.findById(hash)
+                .orElseGet(() -> new File(hash, hash, hash, LocalDateTime.now().plusDays(maxExpiryDays)));
+        f.setChunkCount(Math.max(f.getChunkCount(), index + 1));
+        if (!f.isCompleted()) {
+            f.setCompleted(false);
+        }
+        fileRepository.save(f);
 
         return ResponseEntity.noContent().build();
     }

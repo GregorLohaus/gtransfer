@@ -14,6 +14,8 @@ public class File {
   private String path;
   private String name;
   private Integer chunkCount;
+  @Column(columnDefinition = "boolean default false")
+  private Boolean completed = false;
   private LocalDateTime expireyDateTime;
   private Integer downloadLimit;
   @Column(columnDefinition = "integer default 0")
@@ -47,6 +49,12 @@ public class File {
   }
   public void setChunkCount(Integer chunkCount) {
     this.chunkCount = chunkCount;
+  }
+  public boolean isCompleted() {
+    return Boolean.TRUE.equals(completed);
+  }
+  public void setCompleted(Boolean completed) {
+    this.completed = completed;
   }
   public Integer getDownloadLimit() {
     return downloadLimit;
