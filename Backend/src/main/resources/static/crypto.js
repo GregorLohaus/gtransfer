@@ -16,7 +16,6 @@ async function encryptFile(file, chunkSize = DEFAULT_CHUNK_SIZE) {
         hash,
         base64urlKey,
         chunkCount,
-        size: file.size,
         chunks: encryptedChunks(file, key, chunkCount, chunkSize)
     };
 }

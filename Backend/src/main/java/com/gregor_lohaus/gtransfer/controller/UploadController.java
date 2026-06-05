@@ -49,10 +49,9 @@ public class UploadController {
             @RequestParam("hash") String hash,
             @RequestParam("name") String name,
             @RequestParam("chunkCount") Integer chunkCount,
-            @RequestParam("size") Long size,
             @RequestParam(required = false) Integer expiryDays,
             @RequestParam(required = false) Integer downloadLimit) {
-        if (!isValidId(hash) || chunkCount == null || chunkCount < 1 || size == null || size < 0) {
+        if (!isValidId(hash) || chunkCount == null || chunkCount < 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid upload metadata");
         }
 
@@ -61,7 +60,6 @@ public class UploadController {
 
         File f = new File(hash, hash, name, LocalDateTime.now().plusDays(days));
         f.setChunkCount(chunkCount);
-        f.setSize(size);
         f.setDownloadLimit(limit);
         fileRepository.save(f);
 

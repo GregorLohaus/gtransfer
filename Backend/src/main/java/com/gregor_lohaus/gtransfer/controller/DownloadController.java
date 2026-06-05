@@ -46,8 +46,7 @@ public class DownloadController {
         File file = available.file();
         return ResponseEntity.ok(Map.of(
                 "name", file.getName(),
-                "chunkCount", file.getChunkCount(),
-                "size", file.getSize() == null ? 0 : file.getSize()));
+                "chunkCount", file.getChunkCount()));
     }
 
     @GetMapping("/download/{id}/chunk/{index}")

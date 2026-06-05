@@ -72,7 +72,6 @@ async function startUpload() {
         metadata.append('hash', encryptedFile.hash);
         metadata.append('name', selectedFile.name);
         metadata.append('chunkCount', encryptedFile.chunkCount);
-        metadata.append('size', encryptedFile.size);
         if (expiryDays)    metadata.append('expiryDays', expiryDays);
         if (downloadLimit) metadata.append('downloadLimit', downloadLimit);
 
